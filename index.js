@@ -22,7 +22,7 @@ var Pod = require('bip-pod'),
     Email = new Pod({
         name : 'email',
         description : 'Email',
-        dataSources : [ 'email_verify' ]
+        dataSources : [ require('./models/email_verify') ] 
     });
 
 

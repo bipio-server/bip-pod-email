@@ -1,8 +1,29 @@
-bip-pod
+bip-pod-email
 =======
 
-Bipio's Pod bridge.  Provides the entry point and resources for Pods to do work.
+Email Pod for Bipio.  Outbound email delivery for Bips
 
+## Installation
+
+From bipio server install directory
+
+    npm install bip-pod-email
+
+## Methods
+
+### smtp_forward
+
+Use to forward email messages to a chosen recipient (requires recipient verification)
+
+Sample Channel Config :
+
+```
+"config": {
+  "rcpt_to": "foo@bar.net"
+}
+```
+
+[Bipio Docs](https://bip.io/docs/pods/email)
 
 ## License
 

@@ -23,12 +23,6 @@ var crypto = require('crypto'),
     fs = require('fs'),
     nodemailer = require('nodemailer');
 
-/*
-Email.repr = function(action, config) {
-    return this.getActionDescription(action) + ' ' + config.rcpt_to;
-}
-*/
-
 // sets up the smtp_forward container for first time use
 //
 // Checks if the email address needs to be verified, if so, then marks as
@@ -62,10 +56,12 @@ function sendVerifyEmail(dao, nonce, recipient, accountInfo) {
     dao._mailer.confirmEmail(recipient, templateVars);
 }
 
-function createVerifyObject(dao, channel, accountInfo, next) {
-    var modelName = 'channel_pod_email_verify';
-    hash = crypto.createHash('md5');
+function createVerifyObject(dao, modelName, channel, accountInfo, next) {
+    var hash = crypto.createHash('md5');
 
+                        
+                        console.log(channel);
+                        
     // nonce is random
     verifyObj = {
         'email_verify' : channel.config.rcpt_to,
@@ -95,7 +91,7 @@ function createVerifyObject(dao, channel, accountInfo, next) {
  * Actions relays email outbound
  *
  */
-function SmtpForward(config) {    
+function SmtpForward(podConfig) {    
     // pod name. alphanumeric + underscore only
     this.name = 'smtp_forward'; 
     
@@ -108,74 +104,86 @@ function SmtpForward(config) {
     // behaviors
     this.trigger = false; // can be a periodic trigger
     this.singleton = false; // only 1 instance per account
-    this.auth_required = false; // additional auth required
-    
-    this.config = {
-        properties : {
-            rcpt_to: {
-                type: "string",
-                description: 'Email Address (eg: foo@bar.com)',
-                optional: false,
-                unique : true,
-                validate: [
-                    {
-                        pattern : 'email',
-                        msg : 'Invalid Email'
-                    }/*
-                    {
-                        msg : 'Recipient has opted out of communication'
-                    }*/
-                ]
-            }
-        }
-    };
-    
-    this.exports = {
-        properties : {
-            'response_code' : {
-                type : Number,
-                description: 'SMTP Response Code'
-            },
-            'response_message' : {
-                type : String,
-                description: 'SMTP Response Message'
-            }
-        }
-    };
-    
-    this.imports = {
-        properties : {
-            "subject" : {
-                "type" : String,
-                "description" : "Message Subject"
-            },
-            "body_html" : {
-                "type" : String,
-                "description" : "HTML Message Body"
-            },
-            "body_text" : {
-                "type" : String,
-                "description" : "Text Message Body"
-            },
-            "reply_to" : {
-                "type" : String,
-                "description" : "Reply To"
-            }
-        }
-    };
-    
-    this._smtpTransport = nodemailer.createTransport("smtp", CFG.mailer);    
+    this._smtpTransport = nodemailer.createTransport("smtp", podConfig.mailer);    
 }
 
-SmtpForward.prototype.repr = function(action, config) {
-    return this.description + ' to ' + config.rcpt_to;
+SmtpForward.prototype = {};
+
+SmtpForward.prototype.getSchema = function() {
+    return {
+        config : {
+            properties : {
+                rcpt_to: {
+                    type: "string",
+                    description: 'Email Address (eg: foo@bar.com)',
+                    optional: false,
+                    unique : true,
+                    validate: [
+                        {
+                            pattern : 'email',
+                            msg : 'Invalid Email'
+                        }/*
+                        {
+                            msg : 'Recipient has opted out of communication'
+                        }*/
+                    ]
+                }
+            }
+        },
+    
+        exports : {
+            properties : {
+                'response_code' : {
+                    type : Number,
+                    description: 'SMTP Response Code'
+                },
+                'response_message' : {
+                    type : String,
+                    description: 'SMTP Response Message'
+                }
+            }
+        },
+    
+        imports : {
+            properties : {
+                "subject" : {
+                    "type" : String,
+                    "description" : "Message Subject"
+                },
+                "body_html" : {
+                    "type" : String,
+                    "description" : "HTML Message Body"
+                },
+                "body_text" : {
+                    "type" : String,
+                    "description" : "Text Message Body"
+                },
+                "reply_to" : {
+                    "type" : String,
+                    "description" : "Reply To"
+                }
+            }
+        }
+    };
 }
 
 /**
+ * Returns a string representation for channels configured for this action
+ * 
+ * @param channelConfig {Object} Channel Config Struct.
+ **/
+SmtpForward.prototype.repr = function(channelConfig) {
+    return this.description + (channelConfig ? ' to ' + channelConfig.rcpt_to : '');
+}
+
+/**
+ * Sets up the provided channel for use.
  *
  */
 SmtpForward.prototype.setup = function(channel, accountInfo, options, next) {
-    var dao = Email.getDao(), modelName = 'channel_pod_email_verify';
+    var dao = this.$resource.dao, 
+        modelName = this.$resource.getDataSourceName('verify');
+
     dao.findFilter(
         modelName,
         {
@@ -186,10 +194,15 @@ SmtpForward.prototype.setup = function(channel, accountInfo, options, next) {
 
             if (err) {
                 next(err, 'channel', channel, 500);
-
             } else {
                 if (!results) {              
-                    createVerifyObject(dao, channel, accountInfo, next);
+                    createVerifyObject(
+                        dao,
+                        modelName,
+                        channel,
+                        accountInfo,
+                        next
+                    );
                 } else {
 
                     // iterate over results.
@@ -220,7 +233,7 @@ SmtpForward.prototype.setup = function(channel, accountInfo, options, next) {
 
                     // create a verification message for this user -> recipient
                     if (!finalMode) {
-                        createVerifyObject(dao, channel, accountInfo, next);
+                        createVerifyObject(dao, modelName, channel, accountInfo, next);
 
                     } else if (finalMode == 'no_global') {
                         // forbidden channels are deleted
@@ -264,7 +277,7 @@ SmtpForward.prototype.rpc = function(method, req, next) {
     // Remote client is performing a verify action.
     if (method == 'verify') {
 
-        modelName = 'channel_pod_email_verify';
+        modelName = this.$resource.getDataSourceName('verify');
         var accept, nonce, ownerId;
 
         accept = req.query.accept;
@@ -326,7 +339,10 @@ next(true, modelName, {
 }
 
 
-// Invoke smtp_forward
+/**
+ * Invokes (runs) the action.
+ * 
+ */
 SmtpForward.prototype.invoke = function(imports, channel, sysImports, contentParts, next) {
     // if imports 'body' is an object or array, then flatten
     var body = "";
