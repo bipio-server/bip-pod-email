@@ -39,14 +39,14 @@ var crypto = require('crypto'),
 // or a user alert via the dao and drop the channel.
 //
 
-function sendVerifyEmail(dao, nonce, recipient, accountInfo, logger) {    
+function sendVerifyEmail(dao, nonce, recipient, accountInfo, next) {    
     var userDom = accountInfo.getDefaultDomainStr(),
         callbackUrl = userDom + '/rpc/pod/email/smtp_forward/verify?_nonce=' + nonce + '&accept=';
         self = this,
-        mailTemplate = fs.readFileSync('./templates/email_confirm.ejs', 'utf8'),
+        mailTemplate = fs.readFileSync(__dirname + '/templates/email_confirm.ejs', 'utf8'),
         templateVars = {
-            'name' : accountInfo.user.name,
-            'name_first' : accountInfo.user.given_name,
+            'name' : accountInfo.user.name !== '' ? accountInfo.user.name : accountInfo.user.username,
+            'name_first' : accountInfo.user.given_name !== '' ? accountInfo.user.given_name : accountInfo.user.username,
             'opt_in' : callbackUrl + 'accept',  // channel accept callback
             'opt_out_perm' : callbackUrl + 'no_global' // global optout
         },
@@ -63,18 +63,11 @@ function sendVerifyEmail(dao, nonce, recipient, accountInfo, logger) {
     mailOptions.html = ejs.render(mailTemplate, templateVars);
 
     // send email
-    smtpTransport.sendMail(mailOptions, function(error, response) {                
-        if(!error) {
-            logger.logmessage("Message sent: " + response.message);
-        } else {
-            // @todo - raise with orignating user to fix email address
-            // if broken and manually resend
-            logger.logmessage(error, 'error');            
-        }
-    });
+    smtpTransport.sendMail(mailOptions, next);    
 }
 
-function createVerifyObject(dao, modelName, channel, accountInfo, next) {
+//function createVerifyObject(dao, modelName, channel, accountInfo, next) {
+function createVerifyObject($resource, modelName, channel, accountInfo, next) {
     var hash = crypto.createHash('md5');
 
     // nonce is random
@@ -85,12 +78,26 @@ function createVerifyObject(dao, modelName, channel, accountInfo, next) {
         'mode' : 'pending'
     };
 
-    model = dao.modelFactory(modelName, verifyObj, accountInfo);
+    model = $resource.dao.modelFactory(modelName, verifyObj, accountInfo);
 
-    dao.create(model, function(err, result) {
+    $resource.dao.create(model, function(err, result) {
         // ask the user to verify they'll accept messages
         if (!err && result) {
-            sendVerifyEmail(dao, model.nonce, channel.config.rcpt_to, accountInfo);
+            sendVerifyEmail(
+                $resource.dao, 
+                model.nonce, 
+                channel.config.rcpt_to, 
+                accountInfo, 
+                function(error, response) {                
+                    if(!error) {
+                        $resource.log("Message sent: " + response.message, channel);
+                    } else {
+                        // @todo - raise with orignating user to fix email address
+                        // if broken and manually resend
+                        $resource.log(error + response, channel, 'error');
+                    }
+                }
+            );
             
             // @todo fire off a webfinger job for this channel to attach icon
             // http://www.google.com/s2/webfinger/?q={rcpt_to}
@@ -194,8 +201,9 @@ SmtpForward.prototype.repr = function(channelConfig) {
  * Sets up the provided channel for use.
  *
  */
-SmtpForward.prototype.setup = function(channel, accountInfo, options, next) {
-    var dao = this.$resource.dao, 
+SmtpForward.prototype.setup = function(channel, accountInfo, next) {
+    var $resource = this.$resource,
+        dao = $resource.dao, 
         modelName = this.$resource.getDataSourceName('verify');
 
     dao.findFilter(
@@ -211,7 +219,7 @@ SmtpForward.prototype.setup = function(channel, accountInfo, options, next) {
             } else {
                 if (!results) {              
                     createVerifyObject(
-                        dao,
+                        $resource,
                         modelName,
                         channel,
                         accountInfo,
@@ -247,7 +255,7 @@ SmtpForward.prototype.setup = function(channel, accountInfo, options, next) {
 
                     // create a verification message for this user -> recipient
                     if (!finalMode) {
-                        createVerifyObject(dao, modelName, channel, accountInfo, next);
+                        createVerifyObject($resource, modelName, channel, accountInfo, next);
 
                     } else if (finalMode == 'no_global') {
                         // forbidden channels are deleted
@@ -290,13 +298,12 @@ SmtpForward.prototype.rpc = function(method, req, next) {
 
     // Remote client is performing a verify action.
     if (method == 'verify') {
-
         modelName = this.$resource.getDataSourceName('verify');
-        var accept, nonce, ownerId;
+        var acceptMode, nonce, ownerId;
 
-        accept = req.query.accept;
+        acceptMode = req.query.accept;
         nonce = req.query._nonce;
-        ownerId = req.params['_user'].owner_id;
+        ownerId = req.remoteUser.user.id;
 
         // find the verification record
         dao.find(
@@ -314,12 +321,8 @@ SmtpForward.prototype.rpc = function(method, req, next) {
                 } else {
                     // update verify object
                     dao.updateColumn(modelName, result.id, {
-                        'mode' : accept
+                        'mode' : acceptMode
                     } );
-
-                    // @todo Where verify == no_global, update *all* user channels
-                    // and mark as unavailable.
-                    //
 
                     // update all channels for the requesting user, with this recipient response
                     dao.findFilter('channel', {
@@ -333,17 +336,24 @@ SmtpForward.prototype.rpc = function(method, req, next) {
                             return;
                         } else {                           
                             for (i in results) {
-                                dao.updateColumn('channel', results[i].id, {
-                                    _available : accept == 'accept' ? true : false
-                                });
+                                // drop this channel from the account if the recipient
+                                // has opted out.
+                                if (acceptMode === 'no_global') {
+                                    dao.removeFilter('channel', { id : results[i].id });
+                                } else {
+                                    dao.updateColumn('channel', results[i].id, {
+                                        _available : acceptMode == 'accept' ? true : false
+                                    });
+                                }
                             }
                         }
                     });
-                next(false, modelName, {
-                    '_redirect' : CFG.website_public + '/emitter/email_verify/' + accept
-                }, 301 );
+                    
+                    next(false, modelName, {
+                        '_redirect' : CFG.website_public + '/emitter/email_verify/' + acceptMode
+                    }, 301 );
+                }
             }
-        }
         );
     return;
 }

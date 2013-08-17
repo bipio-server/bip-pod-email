@@ -26,7 +26,7 @@ var Pod = require('bip-pod'),
     });
 
 
-// Action all set? Then add it to the pod
+// attach smtp forwarder
 Email.add(require('./smtp_forward.js'));
 
 // -----------------------------------------------------------------------------
