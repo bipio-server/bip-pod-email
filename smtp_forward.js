@@ -21,7 +21,9 @@
 var crypto = require('crypto'),
     uuid = require('node-uuid'),
     fs = require('fs'),
-    nodemailer = require('nodemailer');
+    nodemailer = require('nodemailer'),
+    ejs = require('ejs'),
+    smtpTransport;
 
 // sets up the smtp_forward container for first time use
 //
@@ -37,31 +39,44 @@ var crypto = require('crypto'),
 // or a user alert via the dao and drop the channel.
 //
 
-function sendVerifyEmail(dao, nonce, recipient, accountInfo) {    
+function sendVerifyEmail(dao, nonce, recipient, accountInfo, logger) {    
     var userDom = accountInfo.getDefaultDomainStr(),
-    callbackUrl = userDom + '/rpc/pod/email/smtp_forward/verify?_nonce=' + nonce + '&accept=';
-
-    var templateVars = {
-        'name' : accountInfo.user.name,
-        'name_first' : accountInfo.user.given_name,
-        'opt_in' : callbackUrl + 'accept',  // channel accept callback
-        'opt_out_perm' : callbackUrl + 'no_global' // global optout
-    };
+        callbackUrl = userDom + '/rpc/pod/email/smtp_forward/verify?_nonce=' + nonce + '&accept=';
+        self = this,
+        mailTemplate = fs.readFileSync('./templates/email_confirm.ejs', 'utf8'),
+        templateVars = {
+            'name' : accountInfo.user.name,
+            'name_first' : accountInfo.user.given_name,
+            'opt_in' : callbackUrl + 'accept',  // channel accept callback
+            'opt_out_perm' : callbackUrl + 'no_global' // global optout
+        },
+        mailOptions = {
+            from: "bipio app <support@bip.io>",
+            to: recipient,
+            subject: templateVars['name'] + " wants to connect!"
+        };
 
     if (!templateVars['name_first']) {
         templateVars['name_first'] = templateVars['name'];
     }
 
-    // @todo : use local mailer
-    dao._mailer.confirmEmail(recipient, templateVars);
+    mailOptions.html = ejs.render(mailTemplate, templateVars);
+
+    // send email
+    smtpTransport.sendMail(mailOptions, function(error, response) {                
+        if(!error) {
+            logger.logmessage("Message sent: " + response.message);
+        } else {
+            // @todo - raise with orignating user to fix email address
+            // if broken and manually resend
+            logger.logmessage(error, 'error');            
+        }
+    });
 }
 
 function createVerifyObject(dao, modelName, channel, accountInfo, next) {
     var hash = crypto.createHash('md5');
 
-                        
-                        console.log(channel);
-                        
     // nonce is random
     verifyObj = {
         'email_verify' : channel.config.rcpt_to,
@@ -77,9 +92,8 @@ function createVerifyObject(dao, modelName, channel, accountInfo, next) {
         if (!err && result) {
             sendVerifyEmail(dao, model.nonce, channel.config.rcpt_to, accountInfo);
             
-            // fire off a webfinger job for this channel
-//            dao.publish('background_tasks', 'channel_webfinger', { 'channel_id' : channel.id, 'rcpt_to' : channel.config.rcpt_to } );
-// http://www.google.com/s2/webfinger/?q={rcpt_to}
+            // @todo fire off a webfinger job for this channel to attach icon
+            // http://www.google.com/s2/webfinger/?q={rcpt_to}
         }
         next(err, 'channel', channel, 202);
     }, accountInfo);
@@ -104,7 +118,7 @@ function SmtpForward(podConfig) {
     // behaviors
     this.trigger = false; // can be a periodic trigger
     this.singleton = false; // only 1 instance per account
-    this._smtpTransport = nodemailer.createTransport("smtp", podConfig.mailer);    
+    smtpTransport = nodemailer.createTransport("smtp", podConfig.mailer);    
 }
 
 SmtpForward.prototype = {};
@@ -389,7 +403,7 @@ SmtpForward.prototype.invoke = function(imports, channel, sysImports, contentPar
         }
     }
 
-    this._smtpTransport.sendMail(mailOptions, function(error, response){
+    smtpTransport.sendMail(mailOptions, function(error, response){
         var exports = {
             'response_message' : ''
             };

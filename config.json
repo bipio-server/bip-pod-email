@@ -1,0 +1,9 @@
+/* 
+ * Email Pod config defaults
+ */
+{
+    "mailer": {
+        "host" : "localhost",
+        "port" : 25
+    }
+}
