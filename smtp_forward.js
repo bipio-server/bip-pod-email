@@ -66,7 +66,6 @@ function sendVerifyEmail(dao, nonce, recipient, accountInfo, next) {
     smtpTransport.sendMail(mailOptions, next);    
 }
 
-//function createVerifyObject(dao, modelName, channel, accountInfo, next) {
 function createVerifyObject($resource, modelName, channel, accountInfo, next) {
     var hash = crypto.createHash('md5');
 
@@ -98,9 +97,6 @@ function createVerifyObject($resource, modelName, channel, accountInfo, next) {
                     }
                 }
             );
-            
-            // @todo fire off a webfinger job for this channel to attach icon
-            // http://www.google.com/s2/webfinger/?q={rcpt_to}
         }
         next(err, 'channel', channel, 202);
     }, accountInfo);
@@ -125,6 +121,8 @@ function SmtpForward(podConfig) {
     // behaviors
     this.trigger = false; // can be a periodic trigger
     this.singleton = false; // only 1 instance per account
+    this.auth_required = false; // this action will handle rpc auth.
+    
     smtpTransport = nodemailer.createTransport("smtp", podConfig.mailer);    
 }
 
@@ -345,6 +343,13 @@ SmtpForward.prototype.rpc = function(method, req, next) {
                                         _available : acceptMode == 'accept' ? true : false
                                     });
                                 }
+                            }
+                            
+                            if (acceptMode === 'accept') {                                
+                                dao.webFinger(result.email_verify, function(err, xrd) {
+                                    // @todo fire off a webfinger job for this channel to attach icon
+                                    // http://www.google.com/s2/webfinger/?q={rcpt_to}
+                                });
                             }
                         }
                     });
