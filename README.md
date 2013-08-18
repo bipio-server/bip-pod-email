@@ -1,13 +1,21 @@
-bip-pod-email
+![Email](email.png) bip-pod-email
 =======
 
-Email Pod for Bipio.  
+[Email](http://en.wikipedia.org/wiki/Email) pod for [bipio](https://bip.io).  
 
 ## Installation
 
-From bipio server install directory
+From bipio server root directory
 
     npm install bip-pod-email
+    ./tools/pod-install.js -a email [-u optional account-wide channel auto install]
+
+The pod-install script is a server script which will register the pod with the bipio server and add sparse
+configuration to your NODE_ENV environment config ('default.json', staging or production)
+keyed to 'email', based on the default config in the pod constructor.  It will also move the
+pod icon into the server cdn
+
+Manually restart the bipio server at your convenience.
 
 ## Actions
 
