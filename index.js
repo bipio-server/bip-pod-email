@@ -22,10 +22,16 @@ var Pod = require('bip-pod'),
     Email = new Pod({
         name : 'email',
         description : 'Email',
-        dataSources : [ require('./models/email_verify') ] 
+        dataSources : [ require('./models/email_verify') ],
+        // default config
+        config : {
+            "mailer": {
+                "host" : "localhost",
+                "port" : 25
+            }
+        }
     });
-
-
+    
 // attach smtp forwarder
 Email.add(require('./smtp_forward.js'));
 
