@@ -1,6 +1,6 @@
 {
     "name": "bip-pod-email",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "description": "Email Pod for Bipio",
     "keywords": [
     "bip",
@@ -31,7 +31,5 @@
     },
     "engines": {
         "node": ">= 0.10.0"
-    },
-    "_id": "bip-pod-email@0.0.2",
-    "_from": "bip-pod-email@>=0.0.1"
+    }
 }
