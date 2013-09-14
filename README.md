@@ -17,23 +17,7 @@ pod icon into the server cdn
 
 Manually restart the bipio server at your convenience.
 
-## Actions
-
-### smtp_forward
-
-Use to forward email messages to a chosen recipient (requires recipient verification).
-This action contains an email receipt with verification RPC which the remote user must verify against,
-they will be backlinked to :
-
-    https://{your domain}/rpc/pod/email/smtp_forward/verify?_nonce={nonce}&accept={choice}'
-
-Sample Channel Config :
-
-```
-"config": {
-  "rcpt_to": "foo@bar.net"
-}
-```
+## Documentation
 
 [Bipio Docs](https://bip.io/docs/pods/email)
 

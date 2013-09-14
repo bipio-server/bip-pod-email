@@ -291,16 +291,16 @@ SmtpForward.prototype.setup = function(channel, accountInfo, next) {
 /**
  *
  */
-SmtpForward.prototype.rpc = function(method, req, next) {
-    var dao = this.$resource.dao, modelName;
+SmtpForward.prototype.rpc = function(method, sysImports, options, channel, req, res) {
+    var dao = this.$resource.dao, modelName, log = $resource.log;
 
     // Remote client is performing a verify action.
     if (method == 'verify') {
         modelName = this.$resource.getDataSourceName('verify');
         var acceptMode, nonce, ownerId;
 
-        acceptMode = req.query.accept;
-        nonce = req.query._nonce;
+        acceptMode = options.accept;
+        nonce = options._nonce;
         ownerId = req.remoteUser.user.id;
 
         // find the verification record
@@ -311,11 +311,10 @@ SmtpForward.prototype.rpc = function(method, req, next) {
             },
             function(err, result) {
                 if (err) {
-                    next(true, err);
-                    return;
+                    res.send(500);
+                    log(error, 'error');
                 } else if (!result) {
-                    next(true, undefined, undefined, 404);
-                    return;
+                    res.send(404);
                 } else {
                     // update verify object
                     dao.updateColumn(modelName, result.id, {
@@ -330,8 +329,7 @@ SmtpForward.prototype.rpc = function(method, req, next) {
                         }
                     }, function(err, results) {
                         if (err || !result) {
-                            next(true, 404);
-                            return;
+                            res.send(404);
                         } else {                           
                             for (i in results) {
                                 // drop this channel from the account if the recipient
@@ -354,17 +352,13 @@ SmtpForward.prototype.rpc = function(method, req, next) {
                         }
                     });
                     
-                    next(false, modelName, {
-                        '_redirect' : CFG.website_public + '/emitter/email_verify/' + acceptMode
-                    }, 301 );
+                    res.redirect(301, CFG.website_public + '/emitter/email_verify/' + acceptMode);
                 }
             }
-        );
-    return;
-}
-next(true, modelName, {
-    'status' : 404
-}, 404);
+        );    
+    } else {
+        res.send(404);
+    }
 }
 
 
@@ -373,6 +367,7 @@ next(true, modelName, {
  * 
  */
 SmtpForward.prototype.invoke = function(imports, channel, sysImports, contentParts, next) {
+    var log = this.$resource.log;
     // if imports 'body' is an object or array, then flatten
     var body = "";
     if  (imports.body instanceof Object) {
@@ -422,7 +417,10 @@ SmtpForward.prototype.invoke = function(imports, channel, sysImports, contentPar
         var exports = {
             'response_message' : ''
             };
-            
+        if (error) {
+            log(error, channel, 'error');
+        }
+console.log(error);            
         exports.response_message = (error) ? error.message : response.message;       
         next(error, exports);
         
