@@ -378,7 +378,7 @@ SmtpForward.prototype.invoke = function(imports, channel, sysImports, contentPar
         body = imports.body;
     }
 
-    if (sysImports.reply_to == '') {
+    if (!sysImports.reply_to || sysImports.reply_to == '') {
         sysImports.reply_to = 'noreply@bip.io';
     }
 
@@ -391,7 +391,7 @@ SmtpForward.prototype.invoke = function(imports, channel, sysImports, contentPar
         attachments : []
     }
 
-    if (contentParts._files && contentParts._files.length > 0) {        
+    if (contentParts && contentParts._files && contentParts._files.length > 0) {        
         for (var i = 0; i < contentParts._files.length; i++) {
             mailOptions.attachments.push({
                 fileName : contentParts._files[i].name,
