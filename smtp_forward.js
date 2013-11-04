@@ -296,7 +296,7 @@ SmtpForward.prototype.setup = function(channel, accountInfo, next) {
 
           } else if (finalMode == 'no_global') {
             // forbidden channels are deleted
-            dao.remove(channel, channel.id, accountInfo);
+            dao.remove('channel', channel.id, accountInfo);
             var errorPacket = {
               'config.rcpt_to' : {
                 'message' : 'Recipient Unavailable'
