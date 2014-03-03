@@ -194,11 +194,11 @@ SmtpForward.prototype.getSchema = function() {
     exports : {
       properties : {
         'response_code' : {
-          type : Number,
+          type : "integer",
           description: 'SMTP Response Code'
         },
         'response_message' : {
-          type : String,
+          type : "string",
           description: 'SMTP Response Message'
         }
       }
@@ -207,19 +207,19 @@ SmtpForward.prototype.getSchema = function() {
     imports : {
       properties : {
         "subject" : {
-          "type" : String,
+          "type" : "string",
           "description" : "Message Subject"
         },
         "body_html" : {
-          "type" : String,
+          "type" : "text",
           "description" : "HTML Message Body"
         },
         "body_text" : {
-          "type" : String,
+          "type" : "text",
           "description" : "Text Message Body"
         },
         "reply_to" : {
-          "type" : String,
+          "type" : "string",
           "description" : "Reply To"
         }
       }
