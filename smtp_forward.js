@@ -158,7 +158,21 @@ function SmtpForward(podConfig) {
   this.singleton = false; // only 1 instance per account
   this.auth_required = false; // this action will handle rpc auth.
 
-  smtpTransport = nodemailer.createTransport("smtp", podConfig.mailer);
+  smtpTransport = nodemailer.createTransport(podConfig.strategy || "smtp", podConfig.mailer);
+
+  if (podConfig.dkim && podConfig.dkim.selector && podConfig.dkim.key_path) {    
+    fs.readFile(podConfig.dkim.key_path, function(err, contents) {
+      if (err) {
+        app.logmessage('Email Pod DKIM pem unreadable at ' + podConfig.dkim.key_path + '[' + err + ']');
+      } else {       
+        smtpTransport.useDKIM({
+          keySelector : podConfig.dkim.selector,
+          privateKey : contents,
+          domainName : CFG.domain_public
+        });
+      }
+    });
+  }
 }
 
 SmtpForward.prototype = {};
@@ -321,7 +335,6 @@ SmtpForward.prototype.setup = function(channel, accountInfo, next) {
               }
               next(err, 'channel', channel, (err) ? 500 : 202); // deferred
             });
-
           }
         }
       }
@@ -405,7 +418,6 @@ SmtpForward.prototype.rpc = function(method, sysImports, options, channel, req, 
   }
 }
 
-
 /**
  * Invokes (runs) the action.
  *
@@ -423,16 +435,22 @@ SmtpForward.prototype.invoke = function(imports, channel, sysImports, contentPar
   }
 
   if (!sysImports.reply_to || sysImports.reply_to == '') {
-    sysImports.reply_to = 'noreply@bip.io';
+    sysImports.reply_to = 'noreply@' + CFG.domain_public;
   }
 
   var mailOptions = {
-    'from' : sysImports.reply_to,
+    'from' : imports.reply_to || sysImports.reply_to,
+    'sender' : sysImports.reply_to,
     'to' : channel.config.rcpt_to,
     'subject' : imports.subject,
-    'text' : imports.body_text,
     'html' : imports.body_html,
-    attachments : []
+    'generateTextFromHTML' : true,
+    'messageId' : sysImports.client.id,
+    'attachments' : []
+  }
+
+  if (imports.body_text) {
+    mailOptions.text = imports.body_text;
   }
 
   if (contentParts && contentParts._files && contentParts._files.length > 0) {
