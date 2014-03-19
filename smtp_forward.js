@@ -157,14 +157,14 @@ function SmtpForward(podConfig) {
   this.trigger = false; // can be a periodic trigger
   this.singleton = false; // only 1 instance per account
   this.auth_required = false; // this action will handle rpc auth.
-  
+
   smtpTransport = nodemailer.createTransport(podConfig.strategy || "smtp", podConfig.mailer);
 
-  if (podConfig.dkim && podConfig.dkim.selector && podConfig.dkim.key_path) {    
+  if (podConfig.dkim && podConfig.dkim.selector && podConfig.dkim.key_path) {
     fs.readFile(podConfig.dkim.key_path, function(err, contents) {
       if (err) {
         app.logmessage('Email Pod DKIM pem unreadable at ' + podConfig.dkim.key_path + '[' + err + ']');
-      } else {       
+      } else {
         smtpTransport.useDKIM({
           keySelector : podConfig.dkim.selector,
           privateKey : contents,
@@ -423,9 +423,11 @@ SmtpForward.prototype.rpc = function(method, sysImports, options, channel, req, 
  *
  */
 SmtpForward.prototype.invoke = function(imports, channel, sysImports, contentParts, next) {
-  var log = this.$resource.log;
-  // if imports 'body' is an object or array, then flatten
-  var body = "";
+  var log = this.$resource.log,
+    podConfig = this.pod.getConfig(),  
+    body = "";
+    
+  // flatten body if its an object
   if  (imports.body instanceof Object) {
     for (key in imports.body) {
       body += key + ':' + imports.body[key] + "\n";
@@ -434,13 +436,17 @@ SmtpForward.prototype.invoke = function(imports, channel, sysImports, contentPar
     body = imports.body;
   }
 
-  if (!sysImports.reply_to || sysImports.reply_to == '') {
-    sysImports.reply_to = 'noreply@' + CFG.domain_public;
+  if (!sysImports.reply_to || sysImports.reply_to == '' && podConfig.sender) {
+    sysImports.reply_to = podConfig.sender;
   }
 
   var mailOptions = {
+    'envelope' : {
+      'from' : imports.reply_to || sysImports.reply_to,
+      'sender' : sysImports.reply_to,
+      'to' : channel.config.rcpt_to
+    },
     'from' : imports.reply_to || sysImports.reply_to,
-    'sender' : sysImports.reply_to,
     'to' : channel.config.rcpt_to,
     'subject' : imports.subject,
     'html' : imports.body_html,

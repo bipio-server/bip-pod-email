@@ -31,6 +31,7 @@ Email = new Pod({
       "host" : "localhost",
       "port" : 25
     },
+    "sender" : "", // sender (DKIM signing party)
     "dkim" : { // DKIM selector and path to private key
       "selector" : "",
       "key_path" : ""
