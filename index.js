@@ -19,26 +19,57 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 var Pod = require('bip-pod'),
-Email = new Pod({
-  name : 'email',
-  description : 'Email',
-  dataSources : [ require('./models/email_verify') ],
-  // uses NodeMailer - check docs for config :
-  // https://github.com/andris9/Nodemailer
-  config : {
-    "strategy" : "smtp", // transport
-    "mailer": { // nodemailer options
-      "host" : "localhost",
-      "port" : 25
-    },
-    "sender" : "", // sender (DKIM signing party)
-    "verify_from" : "Sender <support@exampledomain.org>",
-    "dkim" : { // DKIM selector and path to private key
-      "selector" : "",
-      "key_path" : ""
+  fs = require('fs'),
+  Email = new Pod({
+    name : 'email',
+    description : 'Email',
+    dataSources : [ require('./models/email_verify') ],
+    // uses NodeMailer - check docs for config :
+    // https://github.com/andris9/Nodemailer
+    config : {
+      "strategy" : "smtp", // transport
+      "mailer": { // nodemailer options
+        "host" : "localhost",
+        "port" : 25
+      },
+      "sender" : "noreply@exampledomain.org", // sender (DKIM signing party)
+      "verify_from" : "Sender <support@exampledomain.org>",
+      // .ejs template path for verification emails.
+      // check templates/email_confirm.ejs for a boilerplate sample
+      "verify_template_path" : "",
+      "dkim" : { // DKIM selector and path to private key
+        "selector" : "",
+        "key_path" : ""
+      }
     }
-  }
-});
+  },
+  // constructor
+  function() {
+    var self = this,
+      config = this.getConfig();
+
+    this._template = null;
+
+    fs.readFile(
+      (config.verify_template_path || __dirname + '/templates/email_confirm.ejs'),
+      function(err, data) {
+        if (err) {
+          //log : function(message, channel, level) {
+          self.log(
+            err,
+            {
+              action : 'CONSTRUCTOR',
+              owner_id : 'SYSTEM'
+            },
+            'error'
+          );
+        } else {
+          self._template = data.toString();
+
+        }
+      });
+  });
+
 
 // attach smtp forwarder
 Email.add(require('./smtp_forward.js'));

@@ -45,12 +45,14 @@ function sendVerifyEmail($resource, bip, nonce, recipient, accountInfo, next) {
   userDom = accountInfo.getDefaultDomainStr(),
   callbackUrl = bip._repr,
   self = this,
-  mailTemplate = fs.readFileSync(__dirname + '/templates/email_confirm.ejs', 'utf8'),
+  mailTemplate = $resource.template,
   templateVars = {
     'name' : accountInfo.user.name !== '' ? accountInfo.user.name : accountInfo.user.username,
     'name_first' : accountInfo.user.given_name !== '' ? accountInfo.user.given_name : accountInfo.user.username,
     'opt_in' : callbackUrl + '?nonce=' + nonce + '&accept=accept',  // channel accept callback
-    'opt_out_perm' : callbackUrl + '?nonce=' + nonce + '&accept=no_global' // global optout
+    'opt_out_perm' : callbackUrl + '?nonce=' + nonce + '&accept=no_global', // global optout
+    'site_name' : CFG.site_name || 'BipIO',
+    'website_public' : CFG.website_public
   },
 
   mailOptions = {
@@ -261,6 +263,7 @@ SmtpForward.prototype.setup = function(channel, accountInfo, next) {
   modelName = this.$resource.getDataSourceName('verify');
 
   $resource.podConfig = this.pod.getConfig();
+  $resource.template = this.pod._template;
 
   dao.findFilter(
     modelName,
@@ -334,7 +337,7 @@ SmtpForward.prototype.setup = function(channel, accountInfo, next) {
               '_available' : false
             }, function(err, result) {
               if (err) {
-                console.log(err);
+                $resource.log(err, channel, 'error');
               }
               next(err, 'channel', channel, (err) ? 500 : 202); // deferred
             });
@@ -427,9 +430,9 @@ SmtpForward.prototype.rpc = function(method, sysImports, options, channel, req, 
  */
 SmtpForward.prototype.invoke = function(imports, channel, sysImports, contentParts, next) {
   var log = this.$resource.log,
-    podConfig = this.pod.getConfig(),  
+    podConfig = this.pod.getConfig(),
     body = "";
-    
+
   // flatten body if its an object
   if  (imports.body instanceof Object) {
     for (key in imports.body) {
@@ -454,7 +457,7 @@ SmtpForward.prototype.invoke = function(imports, channel, sysImports, contentPar
     'subject' : imports.subject,
     'html' : imports.body_html,
     'generateTextFromHTML' : true,
-    'messageId' : sysImports.client.id,
+    'messageId' : (sysImports.client && sysImports.client.id) ? sysImports.client.id : null,
     'attachments' : []
   }
 
