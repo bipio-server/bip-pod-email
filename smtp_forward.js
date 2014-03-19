@@ -157,7 +157,7 @@ function SmtpForward(podConfig) {
   this.trigger = false; // can be a periodic trigger
   this.singleton = false; // only 1 instance per account
   this.auth_required = false; // this action will handle rpc auth.
-
+  
   smtpTransport = nodemailer.createTransport(podConfig.strategy || "smtp", podConfig.mailer);
 
   if (podConfig.dkim && podConfig.dkim.selector && podConfig.dkim.key_path) {    
