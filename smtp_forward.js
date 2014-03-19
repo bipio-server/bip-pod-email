@@ -54,7 +54,7 @@ function sendVerifyEmail($resource, bip, nonce, recipient, accountInfo, next) {
   },
 
   mailOptions = {
-    from: "BipIO App <support@cloudspark.com.au>",
+    from: $resource.podConfig.verify_from,
     to: recipient,
     subject: templateVars['name'] + " wants to connect!"
   };
@@ -259,6 +259,8 @@ SmtpForward.prototype.setup = function(channel, accountInfo, next) {
   var $resource = this.$resource,
   dao = $resource.dao,
   modelName = this.$resource.getDataSourceName('verify');
+
+  $resource.podConfig = this.pod.getConfig();
 
   dao.findFilter(
     modelName,

@@ -32,6 +32,7 @@ Email = new Pod({
       "port" : 25
     },
     "sender" : "", // sender (DKIM signing party)
+    "verify_from" : "Sender <support@exampledomain.org>",
     "dkim" : { // DKIM selector and path to private key
       "selector" : "",
       "key_path" : ""
