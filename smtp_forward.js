@@ -89,6 +89,7 @@ function createVerifyObject($resource, modelName, channel, accountInfo, next) {
       $resource.dao.createBip({
         type : 'http',
         note : 'Auto Installed Email Verifier for ' + channel.config.rcpt_to + '.  Do not delete, deleting means the recipient will be unable to verify!',
+        app_id : 'email_pod',
         end_life : {
           time : '+1m',
           imp : 10
@@ -100,7 +101,7 @@ function createVerifyObject($resource, modelName, channel, accountInfo, next) {
         },
         config : {
           auth : 'none',
-          invoke_renderer : {
+          renderer : {
             channel_id : channel.id,
             renderer : 'verify'
           }
