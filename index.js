@@ -21,8 +21,9 @@
 var Pod = require('bip-pod'),
   fs = require('fs'),
   Email = new Pod({
-    name : 'email',
-    description : 'Email',
+    title : 'email',
+    name : 'Email',
+    decription : 'For Sending Emails',
     dataSources : [ require('./models/email_verify') ],
     // uses NodeMailer - check docs for config :
     // https://github.com/andris9/Nodemailer

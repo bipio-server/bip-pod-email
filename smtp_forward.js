@@ -151,10 +151,10 @@ function SmtpForward(podConfig) {
   this.name = 'smtp_forward';
 
   // quick description
-  this.description = 'Send an Email';
+  this.title = 'Send an Email';
 
   // long description
-  this.description_long = 'Use to forward email messages to a chosen recipient (requires recipient verification)';
+  this.description = 'Use to forward email messages to a chosen recipient (requires recipient verification)';
 
   // behaviors
   this.trigger = false; // can be a periodic trigger
