@@ -187,8 +187,6 @@ SmtpForward.prototype.getSchema = function() {
         rcpt_to: {
           type: "string",
           description: 'Email Address (eg: foo@bar.com)',
-          optional: false,
-          unique : true,
           validate: [
           {
             pattern : 'email',
@@ -199,7 +197,8 @@ SmtpForward.prototype.getSchema = function() {
                         }*/
           ]
         }
-      }
+      },
+      "required" : [ "rcpt_to" ]
     },
     renderers : {
       'verify' : {
