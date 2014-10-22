@@ -79,7 +79,7 @@ function createVerifyObject($resource, modelName, channel, accountInfo, next) {
     'email_verify' : channel.config.rcpt_to,
     'owner_id' : channel.owner_id,
     'nonce' : hash.update(uuid.v4() + channel.id).digest('base64'),
-    'mode' : 'pending'
+    'mode' : $resource.pod.getConfig().verify_from === 'none' ? 'accept' : 'pending'
   };
 
   model = $resource.dao.modelFactory(modelName, verifyObj, accountInfo);
@@ -88,51 +88,53 @@ function createVerifyObject($resource, modelName, channel, accountInfo, next) {
     if (!err && result) {
       // smtp_forward has a verify renderer, create the public endpoint for
       // this email to verify against.
-      $resource.dao.createBip({
-        type : 'http',
-        note : 'Auto Installed Email Verifier for ' + channel.config.rcpt_to + '.  Do not delete, deleting means the recipient will be unable to verify!',
-        app_id : 'email_pod',
-        end_life : {
-          time : '+1m',
-          imp : 10
-        },
-        hub : {
-          source : {
-            edges : []
-          }
-        },
-        config : {
-          auth : 'none',
-          renderer : {
-            channel_id : channel.id,
-            renderer : 'verify'
-          }
-        }
-      },
-      accountInfo,
-      function(err, modelName, bip) {
-        if (!err) {
-          sendVerifyEmail(
-            $resource,
-            bip,
-            model.nonce,
-            channel.config.rcpt_to,
-            accountInfo,
-            function(error, response) {
-              if(!error) {
-                $resource.log("Message sent: " + response.message, channel);
-              } else {
-                // @todo - raise with orignating user to fix email address
-                // if broken and manually resend
-                $resource.log(error + response, channel, 'error');
-              }
+      if ($resource.pod.getConfig().verify_from !== 'none') {
+        $resource.dao.createBip({
+          type : 'http',
+          note : 'Auto Installed Email Verifier for ' + channel.config.rcpt_to + '.  Do not delete, deleting means the recipient will be unable to verify!',
+          app_id : 'email_pod',
+          end_life : {
+            time : '+1m',
+            imp : 10
+          },
+          hub : {
+            source : {
+              edges : []
             }
-            );
-          next(err, 'channel', channel, 202);
-        } else {
-          next(err, 'channel', channel, 500);
-        }
-      });
+          },
+          config : {
+            auth : 'none',
+            renderer : {
+              channel_id : channel.id,
+              renderer : 'verify'
+            }
+          }
+        },
+        accountInfo,
+        function(err, modelName, bip) {
+          if (!err) {
+            sendVerifyEmail(
+              $resource,
+              bip,
+              model.nonce,
+              channel.config.rcpt_to,
+              accountInfo,
+              function(error, response) {
+                if(!error) {
+                  $resource.log("Message sent: " + response.message, channel);
+                } else {
+                  // @todo - raise with orignating user to fix email address
+                  // if broken and manually resend
+                  $resource.log(error + response, channel, 'error');
+                }
+              }
+              );
+            next(err, 'channel', channel, 202);
+          } else {
+            next(err, 'channel', channel, 500);
+          }
+        });
+      }
     } else {
       next(err, 'channel', channel, 500);
     }
