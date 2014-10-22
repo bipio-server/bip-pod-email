@@ -71,6 +71,7 @@ function sendVerifyEmail($resource, bip, nonce, recipient, accountInfo, next) {
 }
 
 function createVerifyObject($resource, modelName, channel, accountInfo, next) {
+  podConfig = this.pod.getConfig();
   var hash = crypto.createHash('md5'),
   bip;
 
@@ -79,7 +80,7 @@ function createVerifyObject($resource, modelName, channel, accountInfo, next) {
     'email_verify' : channel.config.rcpt_to,
     'owner_id' : channel.owner_id,
     'nonce' : hash.update(uuid.v4() + channel.id).digest('base64'),
-    'mode' : $resource.pod.getConfig().verify_from === 'none' ? 'accept' : 'pending'
+    'mode' : podConfig === 'none' ? 'accept' : 'pending'
   };
 
   model = $resource.dao.modelFactory(modelName, verifyObj, accountInfo);
@@ -88,7 +89,7 @@ function createVerifyObject($resource, modelName, channel, accountInfo, next) {
     if (!err && result) {
       // smtp_forward has a verify renderer, create the public endpoint for
       // this email to verify against.
-      if ($resource.pod.getConfig().verify_from !== 'none') {
+      if (podConfig.verify_from !== 'none') {
         $resource.dao.createBip({
           type : 'http',
           note : 'Auto Installed Email Verifier for ' + channel.config.rcpt_to + '.  Do not delete, deleting means the recipient will be unable to verify!',
