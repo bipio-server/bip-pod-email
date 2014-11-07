@@ -19,11 +19,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 var crypto = require('crypto'),
-uuid = require('node-uuid'),
-fs = require('fs'),
-nodemailer = require('nodemailer'),
-ejs = require('ejs'),
-smtpTransport;
+  uuid = require('node-uuid'),
+  Q = require('q'),
+  fs = require('fs'),
+  nodemailer = require('nodemailer'),
+  ejs = require('ejs'),
+  smtpTransport;
 
 // sets up the smtp_forward container for first time use
 //
@@ -423,12 +424,25 @@ SmtpForward.prototype.rpc = function(method, sysImports, options, channel, req, 
   }
 }
 
+function sendMail(transport, mailOptions, next) {
+  transport.sendMail(mailOptions, function(error, response){
+    var exports = {
+      'response_message' : ''
+    };
+
+    exports.response_message = (error) ? error.message : response.message;
+
+    next(error, exports);
+  });
+}
+
 /**
  * Invokes (runs) the action.
  *
  */
 SmtpForward.prototype.invoke = function(imports, channel, sysImports, contentParts, next) {
   var log = this.$resource.log,
+    $resource = this.$resource,
     podConfig = this.pod.getConfig(),
     body = "";
 
@@ -464,12 +478,27 @@ SmtpForward.prototype.invoke = function(imports, channel, sysImports, contentPar
     mailOptions.text = imports.body_text;
   }
 
+  var promises = [],
+    deferred;
+
   if (contentParts && contentParts._files && contentParts._files.length > 0) {
     for (var i = 0; i < contentParts._files.length; i++) {
-      mailOptions.attachments.push({
-        fileName : contentParts._files[i].name,
-        streamSource: fs.createReadStream(contentParts._files[i].localpath)
-      });
+      deferred = Q.defer();
+      promises.push(deferred.promise);
+
+      (function(attachments, fileStruct, deferred) {
+        $resource.file.get(fileStruct, function(err, fileStruct, stream) {
+          if (err) {
+            deferred.reject(err);
+          } else {
+            attachments.push({
+              fileName : fileStruct.name,
+              streamSource: stream
+            });
+            deferred.resolve();
+          }
+        });
+      })(mailOptions.attachments, contentParts._files[i], deferred);
     }
   }
 
@@ -486,18 +515,19 @@ SmtpForward.prototype.invoke = function(imports, channel, sysImports, contentPar
     }
   }
 
-  smtpTransport.sendMail(mailOptions, function(error, response){
-    var exports = {
-      'response_message' : ''
-    };
-    if (error) {
-      log(error, channel, 'error');
-    }
-    exports.response_message = (error) ? error.message : response.message;
-    next(error, exports);
+  if (promises.length) {
 
-    return;
-  });
+    Q.all(promises).then(
+      function() {
+        sendMail(smtpTransport, mailOptions, next);
+      },
+      function(err) {
+        next(err);
+      });
+  } else {
+    sendMail(smtpTransport, mailOptions, next);
+  }
+
 }
 
 // -----------------------------------------------------------------------------
