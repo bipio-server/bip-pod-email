@@ -1,0 +1,145 @@
+{
+  "name": "email",
+  "title": "Email",
+  "description": "For Sending Emails",
+  "url": "",
+  "trackDuplicates": false,
+  "config": {
+    "strategy": "smtp",
+    "sender": "noreply@wot.io",
+    "mailer": {
+      "host": "smtp.mailgun.org",
+      "port": 587,
+      "auth": {
+        "user": "postmaster@bip.io",
+        "pass": "0t-jefp6vfu5"
+      },
+      "maxConnections": 5,
+      "maxMessages": null
+    }
+  },
+  "auth": {
+    "strategy": "none"
+  },
+  "rpcs": {},
+  "actions": {
+    "smtp_forward": {
+      "title": "Send an Email",
+      "description": "Use to forward email messages to a chosen recipient (requires recipient verification)",
+      "trigger": "invoke",
+      "config": {
+        "properties": {
+          "rcpt_to": {
+            "type": "string",
+            "description": "Email Address (eg: foo@bar.com)",
+            "validate": [
+              {
+                "pattern": "email",
+                "msg": "Invalid Email"
+              }
+            ]
+          }
+        },
+        "required": [
+          "rcpt_to"
+        ],
+        "disposition": [
+          "rcpt_to"
+        ]
+      },
+      "exports": {
+        "properties": {
+          "response_code": {
+            "type": "integer",
+            "description": "SMTP Response Code"
+          },
+          "response_message": {
+            "type": "string",
+            "description": "SMTP Response Message"
+          }
+        }
+      },
+      "imports": {
+        "properties": {
+          "subject": {
+            "type": "string",
+            "description": "Message Subject"
+          },
+          "body_html": {
+            "type": "text",
+            "description": "HTML Message Body"
+          },
+          "body_text": {
+            "type": "text",
+            "description": "Text Message Body"
+          },
+          "reply_to": {
+            "type": "string",
+            "description": "Reply To"
+          }
+        },
+        "disposition": [
+          "subject",
+          "body_html",
+          "body_text",
+          "reply_to"
+        ]
+      },
+      "rpcs": {
+        "verify": {
+          "description": "Verifies this email channel recipient with a secret key sent to their inbox",
+          "contentType": "text/html",
+          "title": "Recipient Verify"
+        }
+      }
+    }
+  },
+  "dataSources": {
+    "verify": {
+      "properties": {
+        "id": {
+          "type": "string",
+          "renderable": false,
+          "writable": false,
+          "unique": true
+        },
+        "owner_id": {
+          "type": "string",
+          "renderable": false,
+          "writable": false
+        },
+        "created": {
+          "type": "string",
+          "renderable": true,
+          "writable": false
+        },
+        "email_verify": {
+          "type": "string",
+          "renderable": false,
+          "writable": false
+        },
+        "nonce": {
+          "type": "string",
+          "renderable": false,
+          "writable": false
+        },
+        "mode": {
+          "type": "string",
+          "renderable": false,
+          "writable": false,
+          "default": "pending"
+        },
+        "num_sent": {
+          "type": "number",
+          "renderable": false,
+          "writable": false,
+          "default": 1
+        }
+      },
+      "keys": [
+        "owner_id",
+        "email_verify"
+      ]
+    }
+  }
+}
