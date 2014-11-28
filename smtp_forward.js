@@ -184,69 +184,6 @@ function SmtpForward(podConfig) {
 
 SmtpForward.prototype = {};
 
-SmtpForward.prototype.getSchema = function() {
-  return {
-    config : {
-      properties : {
-        rcpt_to: {
-          type: "string",
-          description: 'Email Address (eg: foo@bar.com)',
-          validate: [
-          {
-            pattern : 'email',
-            msg : 'Invalid Email'
-          }/*
-                        {
-                            msg : 'Recipient has opted out of communication'
-                        }*/
-          ]
-        }
-      },
-      "required" : [ "rcpt_to" ]
-    },
-    renderers : {
-      'verify' : {
-        description : 'Recipient Verify',
-        description_long : 'Verifies this email channel recipient with a secret key sent to their inbox',
-        contentType : DEFS.CONTENTTYPE_HTML
-      }
-    },
-    exports : {
-      properties : {
-        'response_code' : {
-          type : "integer",
-          description: 'SMTP Response Code'
-        },
-        'response_message' : {
-          type : "string",
-          description: 'SMTP Response Message'
-        }
-      }
-    },
-
-    imports : {
-      properties : {
-        "subject" : {
-          "type" : "string",
-          "description" : "Message Subject"
-        },
-        "body_html" : {
-          "type" : "text",
-          "description" : "HTML Message Body"
-        },
-        "body_text" : {
-          "type" : "text",
-          "description" : "Text Message Body"
-        },
-        "reply_to" : {
-          "type" : "string",
-          "description" : "Reply To"
-        }
-      }
-    }
-  };
-}
-
 /**
  * Returns a string representation for channels configured for this action
  *

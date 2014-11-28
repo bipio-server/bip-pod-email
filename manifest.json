@@ -6,16 +6,18 @@
   "trackDuplicates": false,
   "config": {
     "strategy": "smtp",
-    "sender": "noreply@wot.io",
+    "sender": "noreply@example.org",
     "mailer": {
-      "host": "smtp.mailgun.org",
-      "port": 587,
-      "auth": {
-        "user": "postmaster@bip.io",
-        "pass": "0t-jefp6vfu5"
-      },
+      "host": "localhost",
+      "port": 25,
       "maxConnections": 5,
       "maxMessages": null
+    },
+    "verify_from" : "Sender <support@exampledomain.org>",
+    "verify_template_path" : "",
+    "dkim" : {
+      "selector" : "",
+      "key_path" : ""
     }
   },
   "auth": {
