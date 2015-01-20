@@ -399,6 +399,10 @@ SmtpForward.prototype.invoke = function(imports, channel, sysImports, contentPar
     sysImports.reply_to = podConfig.sender;
   }
 
+  if ('' === imports.reply_to) {
+    delete imports.reply_to;
+  }
+
   var mailOptions = {
     'envelope' : {
       'from' : imports.reply_to || sysImports.reply_to,
