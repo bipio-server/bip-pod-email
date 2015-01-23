@@ -384,7 +384,8 @@ SmtpForward.prototype.invoke = function(imports, channel, sysImports, contentPar
   var log = this.$resource.log,
     $resource = this.$resource,
     podConfig = this.pod.getConfig(),
-    body = "";
+    body = "",
+    nowMS = process.hrtime().join('');
 
   // flatten body if its an object
   if  (imports.body instanceof Object) {
@@ -414,8 +415,21 @@ SmtpForward.prototype.invoke = function(imports, channel, sysImports, contentPar
     'subject' : imports.subject,
     'html' : imports.body_html,
     'generateTextFromHTML' : true,
-    'messageId' : (sysImports.client && sysImports.client.id) ? sysImports.client.id : null,
     'attachments' : []
+  }
+
+  if (sysImports.client && sysImports.client.id) {
+    // try to match the domain portion of reply_to
+    // even if 'sender <foo@bar.baz>' format
+    replyHost = mailOptions.from.match(/@[a-zA-Z.-0-9]*/).shift();
+
+    if (replyHost) {
+      mailOptions.messageId =
+        sysImports.client.id
+          + '-'
+          + nowMS
+          + replyHost;
+    }
   }
 
   if (imports.body_text) {
