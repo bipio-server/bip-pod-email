@@ -436,6 +436,14 @@ SmtpForward.prototype.invoke = function(imports, channel, sysImports, contentPar
     mailOptions.text = imports.body_text;
   }
 
+  if (imports.in_reply_to) {
+    mailOptions.inReplyTo = imports.in_reply_to;
+  }
+
+  if (imports.references) {
+    mailOptions.references = imports.references;
+  }
+
   var promises = [],
     deferred;
 
