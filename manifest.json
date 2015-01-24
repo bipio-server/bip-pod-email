@@ -13,11 +13,11 @@
       "maxConnections": 5,
       "maxMessages": null
     },
-    "verify_from" : "Sender <support@exampledomain.org>",
-    "verify_template_path" : "",
-    "dkim" : {
-      "selector" : "",
-      "key_path" : ""
+    "verify_from": "Sender <support@exampledomain.org>",
+    "verify_template_path": "",
+    "dkim": {
+      "selector": "",
+      "key_path": ""
     }
   },
   "auth": {
@@ -79,13 +79,13 @@
             "type": "string",
             "description": "Reply To"
           },
-          "in_reply_to" : {
-            "type" : "string",
-            "description" : "In Reply To"
+          "in_reply_to": {
+            "type": "string",
+            "description": "In Reply To"
           },
-          "references" : {
-            "type" : "string",
-            "description" : "References"
+          "references": {
+            "type": "string",
+            "description": "References"
           }
         },
         "disposition": [
@@ -153,5 +153,10 @@
         "email_verify"
       ]
     }
-  }
+  },
+  "tags": [
+    "messaging",
+    "productivity",
+    "email"
+  ]
 }
