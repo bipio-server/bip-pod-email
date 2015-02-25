@@ -418,17 +418,20 @@ SmtpForward.prototype.invoke = function(imports, channel, sysImports, contentPar
     'attachments' : []
   }
 
-  if (sysImports.client && sysImports.client.id) {
+  if (sysImports.client && sysImports.client.id && mailOptions.from) {
     // try to match the domain portion of reply_to
     // even if 'sender <foo@bar.baz>' format
-    replyHost = mailOptions.from.match(/@[a-zA-Z.-0-9]*/).shift();
+    var mailFrom = mailOptions.from.toString().match(/@[a-zA-Z.-0-9]*/);
+    if (mailFrom) {
+      replyHost = mailFrom.shift();
 
-    if (replyHost) {
-      mailOptions.messageId =
-        sysImports.client.id
-          + '-'
-          + nowMS
-          + replyHost;
+      if (replyHost) {
+        mailOptions.messageId =
+          sysImports.client.id
+            + '-'
+            + nowMS
+            + replyHost;
+      }
     }
   }
 
