@@ -398,6 +398,8 @@ SmtpForward.prototype.invoke = function(imports, channel, sysImports, contentPar
 
   if (!sysImports.reply_to || sysImports.reply_to == '' && podConfig.sender) {
     sysImports.reply_to = podConfig.sender;
+  } else {
+    imports.reply_to = imports.reply_to.trim();
   }
 
   if ('' === imports.reply_to) {
