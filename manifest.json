@@ -33,13 +33,13 @@
         "properties": {
           "rcpt_to": {
             "type": "string",
-            "description": "Email Address (eg: foo@bar.com)",
             "validate": [
               {
                 "pattern": "email",
                 "msg": "Invalid Email"
               }
-            ]
+            ],
+            "title": "Email Address"
           }
         },
         "required": [
@@ -53,11 +53,11 @@
         "properties": {
           "response_code": {
             "type": "integer",
-            "description": "SMTP Response Code"
+            "title": "SMTP Response Code"
           },
           "response_message": {
             "type": "string",
-            "description": "SMTP Response Message"
+            "title": "SMTP Response Message"
           }
         }
       },
@@ -65,27 +65,28 @@
         "properties": {
           "subject": {
             "type": "string",
-            "description": "Subject"
+            "title": "Subject"
           },
           "body_html": {
             "type": "text",
-            "description": "HTML Body"
+            "title": "HTML Body"
           },
           "body_text": {
             "type": "text",
-            "description": "Text Body"
+            "title": "Text Body",
+            "description" : "Text Body Will Be Automatically Generated From HTML Body"
           },
           "reply_to": {
             "type": "string",
-            "description": "Reply To"
+            "title": "Reply To"
           },
           "in_reply_to": {
             "type": "string",
-            "description": "In Reply To"
+            "title": "In Reply To"
           },
           "references": {
             "type": "string",
-            "description": "References"
+            "title": "References"
           }
         },
         "disposition": [
