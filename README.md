@@ -1,7 +1,7 @@
 ![Email](email.png) bip-pod-email
 =======
 
-[Email](http://en.wikipedia.org/wiki/Email) pod for [bipio](https://bip.io).  
+[Email](http://en.wikipedia.org/wiki/Email) pod for [bipio](https://bip.io).
 
 ## Installation
 
@@ -25,9 +25,9 @@ Manually restart the bipio server at your convenience.
 
 [GPLv3](http://www.gnu.org/copyleft/gpl.html)
 
-Our open source license is the appropriate option if you are creating an open source application under a license compatible with the GNU GPL license v3. 
+Our open source license is the appropriate option if you are creating an open source application under a license compatible with the GNU GPL license v3.
 
 If you'd like to integrate BipIO with your proprietary system, GPLv3 is likely incompatible. To secure a Commercial OEM License for Bipio, please [reach us](mailto:support@beta.bip.io)
 
 
-Copyright (c) 2010-2014  [Michael Pearson](https://github.com/mjpearson)
+Copyright (c) 2010-2015  [Michael Pearson](https://github.com/mjpearson)

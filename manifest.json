@@ -27,7 +27,7 @@
   "actions": {
     "smtp_forward": {
       "title": "Send an Email",
-      "description": "Use to forward email messages to a chosen recipient (requires recipient verification)",
+      "description": "Sends An Email To A Verfied Recipient",
       "trigger": "invoke",
       "config": {
         "properties": {
@@ -89,6 +89,9 @@
             "title": "References"
           }
         },
+        "required" : [
+          "subject"
+        ],
         "disposition": [
           "subject",
           "body_html",
