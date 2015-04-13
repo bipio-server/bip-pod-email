@@ -15,6 +15,7 @@
     },
     "verify_from": "Sender <support@exampledomain.org>",
     "verify_template_path": "",
+    "verify_required": true,
     "dkim": {
       "selector": "",
       "key_path": ""

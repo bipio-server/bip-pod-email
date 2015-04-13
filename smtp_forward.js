@@ -272,9 +272,10 @@ SmtpForward.prototype.setup = function(channel, accountInfo, next) {
             next(err, 'channel', channel, 200); // ok
 
           } else if (finalMode == 'pending') {
-            channel._available = false;
-            dao.updateColumn('channel', channel.id, {
-              '_available' : false
+            channel._available = ($resource.podConfig.verify_required !== undefined ? !($resource.podConfig.verify_required) : false);
+
+			dao.updateColumn('channel', channel.id, {
+              '_available' : channel._available
             }, function(err, result) {
               if (err) {
                 $resource.log(err, channel, 'error');
