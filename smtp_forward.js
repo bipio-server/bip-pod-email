@@ -274,14 +274,14 @@ SmtpForward.prototype.setup = function(channel, accountInfo, next) {
           } else if (finalMode == 'pending') {
             channel._available = ($resource.podConfig.verify_required !== undefined ? !($resource.podConfig.verify_required) : false);
 
-			dao.updateColumn('channel', channel.id, {
-              '_available' : channel._available
-            }, function(err, result) {
-              if (err) {
-                $resource.log(err, channel, 'error');
-              }
-              next(err, 'channel', channel, (err) ? 500 : 202); // deferred
-            });
+			      dao.updateColumn('channel', channel.id, {
+                '_available' : channel._available
+              }, function(err, result) {
+                if (err) {
+                  $resource.log(err, channel, 'error');
+                }
+                next(err, 'channel', channel, (err) ? 500 : 202); // deferred
+              });
           }
         }
       }
@@ -411,10 +411,10 @@ SmtpForward.prototype.invoke = function(imports, channel, sysImports, contentPar
     'envelope' : {
       'from' : imports.reply_to || sysImports.reply_to,
       'sender' : sysImports.reply_to,
-      'to' : channel.config.rcpt_to
+      'to' : imports.rcpt_to
     },
     'from' : imports.reply_to || sysImports.reply_to,
-    'to' : channel.config.rcpt_to,
+    'to' : imports.rcpt_to,
     'subject' : imports.subject,
     'html' : imports.body_html,
     'generateTextFromHTML' : true,
