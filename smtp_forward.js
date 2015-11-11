@@ -47,8 +47,8 @@ function sendVerifyEmail($resource, bip, nonce, recipient, accountInfo, next) {
   self = this,
   mailTemplate = $resource.template,
   templateVars = {
-    'name' : accountInfo.user.name !== '' ? accountInfo.user.name : accountInfo.user.username,
-    'name_first' : accountInfo.user.given_name !== '' ? accountInfo.user.given_name : accountInfo.user.username,
+    'name' : accountInfo.user.name !== '' ? accountInfo.getName() : accountInfo.getUsername(),
+    'name_first' : accountInfo.user.name !== '' ? accountInfo.getName() : accountInfo.getUsername(),
     'opt_in' : callbackUrl + '?nonce=' + nonce + '&accept=accept',  // channel accept callback
     'opt_out_perm' : callbackUrl + '?nonce=' + nonce + '&accept=no_global', // global optout
     'site_name' : CFG.site_name || 'BipIO',
@@ -64,6 +64,8 @@ function sendVerifyEmail($resource, bip, nonce, recipient, accountInfo, next) {
   if (!templateVars['name_first']) {
     templateVars['name_first'] = templateVars['name'];
   }
+
+  templateVars['name_first'] = templateVars['name'];
 
   mailOptions.html = ejs.render(mailTemplate, templateVars);
   // send email
@@ -301,7 +303,7 @@ SmtpForward.prototype.rpc = function(method, sysImports, options, channel, req, 
 
     acceptMode = options.accept;
     nonce = options.nonce;
-    ownerId = req.remoteUser.user.id;
+    ownerId = req.remoteUser.getId();
 
     // find the verification record
     dao.find(
