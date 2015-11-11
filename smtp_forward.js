@@ -43,7 +43,6 @@ var crypto = require('crypto'),
 function sendVerifyEmail($resource, bip, nonce, recipient, accountInfo, next) {
   var dao = $resource.dao,
   nonce = encodeURIComponent(nonce),
-  userDom = accountInfo.getDefaultDomainStr(),
   callbackUrl = bip._repr,
   self = this,
   mailTemplate = $resource.template,
