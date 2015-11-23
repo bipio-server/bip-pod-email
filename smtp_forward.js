@@ -87,11 +87,13 @@ function createVerifyObject($resource, modelName, channel, accountInfo, next) {
 
   model = $resource.dao.modelFactory(modelName, verifyObj, accountInfo);
   $resource.dao.create(model, function(err, result) {
+
     // ask the user to verify they'll accept messages
     if (!err && result) {
       // smtp_forward has a verify renderer, create the public endpoint for
       // this email to verify against.
-	if (podConfig.verify_from !== 'none') {
+	    if (podConfig.verify_from !== 'none') {
+
         $resource.dao.createBip({
           type : 'http',
           note : 'Auto Installed Email Verifier for ' + channel.config.rcpt_to + '.  Do not delete, deleting means the recipient will be unable to verify!',
@@ -115,6 +117,7 @@ function createVerifyObject($resource, modelName, channel, accountInfo, next) {
         },
         accountInfo,
         function(err, modelName, bip) {
+
           if (!err) {
             sendVerifyEmail(
               $resource,
@@ -206,88 +209,92 @@ SmtpForward.prototype.setup = function(channel, accountInfo, next) {
   $resource.podConfig = this.pod.getConfig();
   $resource.template = this.pod._template;
 
-  dao.findFilter(
-    modelName,
-    {
-      'email_verify' : channel.config.rcpt_to
-    },
-    function(err, results) {
-      var verified = false, pending = false, verifyObj, hash, model;
-      if (err) {
-        next(err, 'channel', channel, 500);
-      } else {
-        if (!results) {
-          createVerifyObject(
-            $resource,
-            modelName,
-            channel,
-            accountInfo,
-            next
-            );
+  if (app.helper.getRegUUID().test(channel.id)) {
+    dao.findFilter(
+      modelName,
+      {
+        'email_verify' : channel.config.rcpt_to
+      },
+      function(err, results) {
+        var verified = false, pending = false, verifyObj, hash, model;
+        if (err) {
+          next(err, 'channel', channel, 500);
         } else {
-          // iterate over results.
-          //
-          var finalMode, result;
+          if (!results) {
+            createVerifyObject(
+              $resource,
+              modelName,
+              channel,
+              accountInfo,
+              next
+              );
+          } else {
+            // iterate over results.
+            //
+            var finalMode, result;
 
-          for (var idx in results) {
-            result = results[idx];
-            // if there's a global deny, then bounce it
-            if (result.mode == 'no_global') {
-              finalMode = 'no_global';
-            }
+            for (var idx in results) {
+              result = results[idx];
+              // if there's a global deny, then bounce it
+              if (result.mode == 'no_global') {
+                finalMode = 'no_global';
+              }
 
-            // if we find a pending request from this user,
-            // then it should still be pending
-            if (result.owner_id == channel.owner_id) {
-              if (result.mode == 'accept' || (!finalMode && result.mode == 'pending')) {
-                finalMode = result.mode;
-                // we break on 'accept', but give the opportunity
-                // to find a 'no_global' catch.  Or in other words,
-                // no_global invalidates any pending requests
-                if (finalMode == 'accept') {
-                  break;
+              // if we find a pending request from this user,
+              // then it should still be pending
+              if (result.owner_id == channel.owner_id) {
+                if (result.mode == 'accept' || (!finalMode && result.mode == 'pending')) {
+                  finalMode = result.mode;
+                  // we break on 'accept', but give the opportunity
+                  // to find a 'no_global' catch.  Or in other words,
+                  // no_global invalidates any pending requests
+                  if (finalMode == 'accept') {
+                    break;
+                  }
                 }
               }
             }
-          }
 
-          // create a verification message for this user -> recipient
-          if (!finalMode) {
-            createVerifyObject($resource, modelName, channel, accountInfo, next);
+            // create a verification message for this user -> recipient
+            if (!finalMode) {
+              createVerifyObject($resource, modelName, channel, accountInfo, next);
 
-          } else if (finalMode == 'no_global') {
-            // forbidden channels are deleted
-            dao.remove('channel', channel.id, accountInfo);
-            var errorPacket = {
-              'config.rcpt_to' : {
-                'message' : 'Recipient Unavailable'
-              }
-            };
-            next(err, {
-              'status' : 403,
-              'message' : 'ValidationError',
-              'errors' : errorPacket
-            }, 403); // forbidden
-
-          } else if (finalMode == 'accept') {
-            next(err, 'channel', channel, 200); // ok
-
-          } else if (finalMode == 'pending') {
-            channel._available = ($resource.podConfig.verify_required !== undefined ? !($resource.podConfig.verify_required) : false);
-
-			      dao.updateColumn('channel', channel.id, {
-                '_available' : channel._available
-              }, function(err, result) {
-                if (err) {
-                  $resource.log(err, channel, 'error');
+            } else if (finalMode == 'no_global') {
+              // forbidden channels are deleted
+              dao.remove('channel', channel.id, accountInfo);
+              var errorPacket = {
+                'config.rcpt_to' : {
+                  'message' : 'Recipient Unavailable'
                 }
-                next(err, 'channel', channel, (err) ? 500 : 202); // deferred
-              });
+              };
+              next(err, {
+                'status' : 403,
+                'message' : 'ValidationError',
+                'errors' : errorPacket
+              }, 403); // forbidden
+
+            } else if (finalMode == 'accept') {
+              next(err, 'channel', channel, 200); // ok
+
+            } else if (finalMode == 'pending') {
+              channel._available = ($resource.podConfig.verify_required !== undefined ? !($resource.podConfig.verify_required) : false);
+
+  			      dao.updateColumn('channel', channel.id, {
+                  '_available' : channel._available
+                }, function(err, result) {
+                  if (err) {
+                    $resource.log(err, channel, 'error');
+                  }
+                  next(err, 'channel', channel, (err) ? 500 : 202); // deferred
+                });
+            }
           }
         }
       }
-    }
-    );
+      );
+  } else {
+    next(false, 'channel', channel, 200);
+  }
 };
 
 /**
